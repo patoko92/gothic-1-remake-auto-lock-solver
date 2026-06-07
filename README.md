@@ -1,0 +1,201 @@
+# 🔒 Gothic 1 Remake — Auto Lock Solver
+
+A BFS-based puzzle solver for the lockpicking mini-game in **Gothic 1 Remake**, written in Rust with a beautiful web UI. It finds the optimal sequence of moves to solve any lock configuration, then can **play the solution automatically** via simulated keyboard input (WASD).
+
+<p align="center">
+  <img src="https://img.shields.io/badge/rust-1.85%2B-orange?logo=rust" alt="Rust">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+  <img src="https://img.shields.io/badge/status-stable-brightgreen" alt="Status">
+</p>
+
+---
+
+## 📖 How the Lock Puzzle Works
+
+In Gothic 1 Remake, locks consist of **1–10 pins**, each at a position from **1 to 7**. The goal is always to get **all pins to position 4**. You move pins by pressing:
+
+| Key | Action |
+|-----|--------|
+| `W` | Select next pin |
+| `S` | Select previous pin |
+| `A` | Move selected pin **left** (+1) |
+| `D` | Move selected pin **right** (−1) |
+
+The twist: **moving one pin can also move other pins**. These dependencies (rules) are different for each lock in the game. For example, moving pin 1 might also move pin 2 in the opposite direction and pin 4 in the same direction.
+
+This solver takes the pin positions and dependency rules, computes the shortest solution via **BFS** (breadth-first search), and can optionally replay it as real keyboard input into the game.
+
+---
+
+## ⚡ Features
+
+- 🧠 **BFS Solver** — finds the shortest sequence of moves to reach all-4s
+- 🎮 **WASD Playback** — auto-plays the solution with real keyboard simulation
+- 🌐 **Web UI** — beautiful Gothic-themed interface, works on desktop & mobile
+- ⚙️ **Configurable Pins** — support for 1–10 pins, adjustable on the fly
+- 🔗 **Rule Editor** — click-to-toggle dependencies between pins (self/same/opposite/none)
+- 🏰 **Preset: Old Camp Tower Lock** — the notoriously hard 6-pin puzzle from the game
+- 📡 **LAN Access** — bind to `0.0.0.0`, use from any device on your network
+- 🎨 **Gothic Fantasy Theme** — MedievalSharp font, gold accents, dark palette
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- [Rust](https://rustup.rs) 1.85+
+- Linux with X11 (for keyboard playback via `enigo`)
+
+### Run
+
+```bash
+git clone https://github.com/patoko92/gothic-1-remake-auto-lock-solver.git
+cd gothic-1-remake-auto-lock-solver
+cargo run --release
+```
+
+Then open **http://localhost:3000** in your browser.
+
+---
+
+## 🖥️ Web UI
+
+The UI has two columns:
+
+### Left Column
+- **Pin State** — shows each pin's current position (editable) and the number of pins
+- **Solve** — runs the BFS solver and displays the move sequence
+- **Playback Controls** — click **Play** to start a 10-second countdown (switch to the game!), then WASD keys are simulated automatically. Click **Stop** to cancel.
+
+### Right Column
+- **Pin Rules** — each pin row shows its dependencies. Click a row to open the editor.
+- **Rule Editor** — clickable badges that cycle: `self` → `same dir` → `opposite` → `off`
+- **Preset buttons** — load predefined lock configurations
+
+---
+
+## 🔌 REST API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Web UI |
+| `GET` | `/api/config` | Get current puzzle config |
+| `POST` | `/api/config` | Update puzzle config |
+| `POST` | `/api/solve` | Run the solver |
+| `POST` | `/api/playback/play` | Start WASD playback |
+| `POST` | `/api/playback/stop` | Stop playback |
+| `GET` | `/api/playback/status` | Check if playback is running |
+| `GET` | `/api/lan-ip` | Get the LAN IP address |
+
+### Example: Solve via API
+
+```bash
+curl -X POST http://localhost:3000/api/solve
+```
+
+Response:
+```json
+{
+  "success": true,
+  "solution": ["1R", "1R", "2L", "3L", "4R", "5R", "6R"],
+  "steps": 7,
+  "message": "Solved in 7 steps! (6 pins, goal all-4s)"
+}
+```
+
+### Example: Update config
+
+```bash
+curl -X POST http://localhost:3000/api/config \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "num_bars": 6,
+    "start": [5,6,2,2,1,1],
+    "rules": {
+      "0": [{"bar":0,"dir":1}],
+      "1": [{"bar":1,"dir":1},{"bar":2,"dir":-1},{"bar":4,"dir":1}],
+      "2": [{"bar":2,"dir":1},{"bar":3,"dir":1}],
+      "3": [{"bar":3,"dir":1}],
+      "4": [{"bar":4,"dir":1},{"bar":0,"dir":-1},{"bar":1,"dir":1},{"bar":2,"dir":-1},{"bar":5,"dir":-1}],
+      "5": [{"bar":5,"dir":1},{"bar":0,"dir":-1},{"bar":1,"dir":1}]
+    }
+  }'
+```
+
+---
+
+## 🏰 Old Camp Tower Lock (Hard Puzzle)
+
+This is the infamous 6-pin lock from the Old Camp tower. Start positions: `[5, 6, 2, 2, 1, 1]`, goal: `[4, 4, 4, 4, 4, 4]`.
+
+**Dependency rules:**
+
+| Pin | Self | Also moves… |
+|-----|------|-------------|
+| 1 | ✅ | — |
+| 2 | ✅ | Pin 3 opposite, Pin 5 same direction |
+| 3 | ✅ | Pin 4 same direction |
+| 4 | ✅ | — |
+| 5 | ✅ | Pin 1 opposite, Pin 2 same, Pin 3 opposite, Pin 6 opposite |
+| 6 | ✅ | Pin 1 opposite, Pin 2 same |
+
+**Solution:** 46 steps — loaded automatically by clicking the preset button.
+
+---
+
+## 📁 Project Structure
+
+```
+locksolver/
+├── Cargo.toml          # Dependencies (axum, enigo, serde, tokio)
+├── Cargo.lock
+├── .gitignore
+├── README.md
+├── src/
+│   ├── main.rs         # Axum HTTP server + API endpoints
+│   ├── solver.rs       # BFS puzzle solver logic
+│   └── playback.rs     # WASD keyboard simulation via enigo
+└── static/
+    └── index.html      # Gothic-themed web UI
+```
+
+---
+
+## 🛠️ Tech Stack
+
+- **[Rust](https://www.rust-lang.org/)** — systems language
+- **[Axum](https://github.com/tokio-rs/axum)** — async web framework
+- **[enigo](https://github.com/enigo-rs/enigo)** — cross-platform keyboard simulation
+- **[Tokio](https://tokio.rs/)** — async runtime
+- **[Serde](https://serde.rs/)** — serialization
+
+---
+
+## 📝 Algorithm
+
+The solver uses **Breadth-First Search (BFS)** to guarantee the shortest solution:
+
+1. Start from the initial pin configuration
+2. For each state, try moving every pin in both directions (L/R)
+3. Before applying a move, validate all affected pins stay within bounds [1, 7]
+4. Apply all dependency changes simultaneously
+5. Track visited states in a `HashSet` to avoid cycles
+6. Return the path when all pins reach position 4
+
+**Complexity:** The state space is at most 7^N (where N = number of pins). For 6 pins, that's ~117,000 possible states — easily handled by BFS.
+
+---
+
+## 🤝 Contributing
+
+Found a lock that can't be solved? Have ideas for more presets? PRs welcome!
+
+1. Fork the repo
+2. Create a feature branch
+3. Submit a pull request
+
+---
+
+## 📄 License
+
+MIT — feel free to use, modify, and share.
