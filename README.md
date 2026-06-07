@@ -12,7 +12,7 @@ A BFS-based puzzle solver for the lockpicking mini-game in **Gothic 1 Remake**, 
 
 ## 📖 How the Lock Puzzle Works
 
-In Gothic 1 Remake, locks consist of **1–10 pins**, each at a position from **1 to 7**. The goal is always to get **all pins to position 4**. You move pins by pressing:
+In Gothic 1 Remake, locks consist of **1–10 pins** (also called layers), each at a position from **1 to 7**. The goal is always to get **all pins to position 4**. You move pins by pressing:
 
 | Key | Action |
 |-----|--------|
@@ -24,6 +24,60 @@ In Gothic 1 Remake, locks consist of **1–10 pins**, each at a position from **
 The twist: **moving one pin can also move other pins**. These dependencies (rules) are different for each lock in the game. For example, moving pin 1 might also move pin 2 in the opposite direction and pin 4 in the same direction.
 
 This solver takes the pin positions and dependency rules, computes the shortest solution via **BFS** (breadth-first search), and can optionally replay it as real keyboard input into the game.
+
+> 📋 See the **[How to Use](#-how-to-use--step-by-step)** section above for a detailed walkthrough.
+
+---
+
+## 🎮 How to Use — Step by Step
+
+When you encounter a lock in the game, follow these steps:
+
+### 1️⃣ Count the Pins
+
+Look at the lock in the game. How many pins (layers) does it have? Most locks have 4–6, but some can have more. Set the **Pins** number in the top-left of the UI to match.
+
+### 2️⃣ Set the Initial Pin Positions
+
+Each pin starts at a certain position (1–7). Look at the lock and set each pin's starting value in the **Pin State** grid. You can type the number directly or use the arrow buttons.
+
+### 3️⃣ Discover the Dependencies (Rules)
+
+This is the most important step. For **each pin**, you need to figure out which other pins move when you move it:
+
+1. In the game, move a pin **left** or **right** by one step
+2. Watch which other pins also moved
+3. In the UI, click the pin's row in the **Pin Rules** panel to open its editor
+4. For each affected pin, click the badge to cycle through:
+   - `self` — the pin itself moves (always required)
+   - `same dir` — this other pin moves in the **same** direction
+   - `opposite` — this other pin moves in the **opposite** direction
+   - `off` — no effect (click again to remove)
+
+> 💡 **Tip:** Start with the pin that has the fewest dependencies — it's easier to isolate what's moving.
+
+Repeat for every pin until all dependencies are mapped out.
+
+### 4️⃣ Solve
+
+Click **🔍 Solve Puzzle**. The BFS solver computes the shortest sequence of moves to get all pins to position 4. You'll see the full move list in the solution box.
+
+### 5️⃣ Execute the Solution
+
+You have two options:
+
+**Manual (read and follow):** Read each move from the solution box and perform it in-game. The format is `{pin}{direction}` — for example, `1R` means "move pin 1 right", `2L` means "move pin 2 left". Pin numbers are 1-based (matching the in-game display).
+
+**Automatic (WASD Playback):**
+1. Make sure the lock in the game is at the **starting position** you configured
+2. Click **▶ Play** — a 10-second countdown starts
+3. Switch to the game window immediately and hover the lock
+4. Watch as the program types the keystrokes for you:
+   - `W`/`S` to select the correct pin
+   - `A`/`D` to move the pin left or right
+5. You can click **⏹ Stop** at any time to abort
+
+> ⚠️ **Important:** The playback assumes you are already at pin 1 when it starts. Make sure the lock UI in-game has the first pin selected, and the starting positions match what you entered in the solver.
 
 ---
 
