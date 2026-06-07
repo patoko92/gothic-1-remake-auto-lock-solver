@@ -197,6 +197,18 @@ async fn stop_playback(State(state): State<AppState>) -> Json<serde_json::Value>
     Json(serde_json::json!({"status": "stopped"}))
 }
 
+async fn lan_ip() -> Json<serde_json::Value> {
+    let ip = std::process::Command::new("sh")
+        .arg("-c")
+        .arg("ip -4 -br addr show 2>/dev/null | grep -vE '^lo|tailscale|docker|veth|br-|virbr' | awk '{print $3}' | cut -d/ -f1 | head -1")
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    Json(serde_json::json!({"ip": ip}))
+}
+
 #[tokio::main]
 async fn main() {
     let config = solver::default_hard_config();
@@ -215,6 +227,7 @@ async fn main() {
         .route("/api/playback/play", post(play_solution))
         .route("/api/playback/stop", post(stop_playback))
         .route("/api/playback/status", get(playback_status))
+        .route("/api/lan-ip", get(lan_ip))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")

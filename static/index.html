@@ -259,6 +259,51 @@ body {
 .btn-block { width: 100%; justify-content: center; }
 .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 
+/* ── Network Toggle ── */
+.net-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  background: #0e0e24;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.78em;
+  color: var(--text-dim);
+}
+.net-toggle .switch {
+  position: relative;
+  width: 40px; height: 22px;
+  background: #1a1a38;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.net-toggle .switch.lan {
+  background: #1a472a;
+  border-color: var(--green);
+}
+.net-toggle .switch::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: var(--gold-dim);
+  border-radius: 50%;
+  transition: all var(--tr);
+}
+.net-toggle .switch.lan::after {
+  left: 20px;
+  background: var(--green);
+}
+.net-addr {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--gold);
+  font-size: 0.9em;
+}
+
 /* ── Rules List ── */
 .rule-row {
   display: flex;
@@ -462,6 +507,12 @@ body {
 <header class="header">
   <h1><span style="font-size:0.7em;opacity:0.7">⚔️</span> Gothic Lock Solver <span style="font-size:0.7em;opacity:0.7">⚔️</span></h1>
   <div class="subtitle">BFS Puzzle Solver — configurable pins, range 1–7, goal always 4</div>
+  <div class="net-toggle">
+    <span>🌐 LAN</span>
+    <div class="switch lan" id="netSwitch" onclick="toggleNetwork()"></div>
+    <span>🏠 Local</span>
+    <span class="net-addr" id="netAddr"></span>
+  </div>
   <div class="ornament">◆ ◇ ◆</div>
 </header>
 
@@ -542,15 +593,44 @@ body {
 let config = null;
 let selectedPin = null;
 let editingRules = {};
+let lanMode = true;
+let lanIp = '';
 
 async function init() {
   const resp = await fetch('/api/config');
   config = await resp.json();
   editingRules = JSON.parse(JSON.stringify(config.rules));
   document.getElementById('numPinsInput').value = config.num_bars;
+  fetchLanIp();
   renderAll();
 }
 init();
+
+async function fetchLanIp() {
+  try {
+    const resp = await fetch('/api/lan-ip');
+    const data = await resp.json();
+    lanIp = data.ip;
+    updateNetworkUI();
+  } catch(e) { lanIp = 'unknown'; }
+}
+
+function toggleNetwork() {
+  lanMode = !lanMode;
+  updateNetworkUI();
+}
+
+function updateNetworkUI() {
+  const sw = document.getElementById('netSwitch');
+  const addr = document.getElementById('netAddr');
+  if (lanMode) {
+    sw.classList.add('lan');
+    addr.textContent = `http://${lanIp}:3000`;
+  } else {
+    sw.classList.remove('lan');
+    addr.textContent = `http://localhost:3000`;
+  }
+}
 
 function clearSolution() {
   document.getElementById('solutionBox').style.display = 'none';
