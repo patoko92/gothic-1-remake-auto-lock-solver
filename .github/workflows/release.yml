@@ -83,8 +83,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "v${{ github.ref_name }}"
-          body: "Release v${{ github.ref_name }}"
+          name: "${{ github.ref_name }}"
+          body: "Release ${{ github.ref_name }}"
           files: |
             locksolver-linux-x86_64.tar.gz
             locksolver-windows-x86_64.zip
