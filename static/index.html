@@ -3,245 +3,551 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gothic 1 Remake - Lock Solver</title>
+<title>Gothic 1 Remake — Lock Solver</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap');
+
+:root {
+  --bg-deep:    #0d0d1a;
+  --bg-card:    #13132b;
+  --bg-hover:   #1a1a3e;
+  --border:     #2a2550;
+  --gold:       #c9a84c;
+  --gold-dim:   #7a6930;
+  --red:        #c0392b;
+  --green:      #27ae60;
+  --text:       #d4c5b9;
+  --text-dim:   #8a7e72;
+  --rad:        12px;
+  --tr:         0.2s ease;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: #1a1a2e;
-  color: #e0e0e0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg-deep);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse at 80% 100%, rgba(108,92,231,0.04) 0%, transparent 60%);
+  color: var(--text);
   min-height: 100vh;
 }
+
+/* ── Header ── */
 .header {
-  background: linear-gradient(135deg, #16213e, #0f3460);
-  padding: 20px;
+  background: linear-gradient(180deg, #0f0f2a 0%, #13132b 100%);
+  border-bottom: 2px solid var(--gold-dim);
+  padding: 28px 20px 22px;
   text-align: center;
-  border-bottom: 2px solid #e94560;
+  position: relative;
+  overflow: hidden;
 }
-.header h1 { font-size: 1.8em; color: #e94560; margin-bottom: 4px; }
-.header p { color: #a0a0b0; font-size: 0.9em; }
-.container { max-width: 1000px; margin: 0 auto; padding: 20px; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-@media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(201,168,76,0.03) 2px, rgba(201,168,76,0.03) 4px);
+  pointer-events: none;
+}
+.header h1 {
+  font-family: 'MedievalSharp', cursive;
+  font-size: 2.2em;
+  color: var(--gold);
+  text-shadow: 0 0 40px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.5);
+  letter-spacing: 2px;
+  position: relative;
+}
+.header .subtitle {
+  color: var(--text-dim);
+  font-size: 0.85em;
+  margin-top: 6px;
+  letter-spacing: 1px;
+}
+.header .ornament {
+  color: var(--gold-dim);
+  font-size: 0.6em;
+  letter-spacing: 8px;
+  margin-top: 4px;
+}
+
+/* ── Layout ── */
+.container {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 780px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .header h1 { font-size: 1.5em; }
+}
+
+/* ── Cards ── */
 .card {
-  background: #16213e;
-  border: 1px solid #2a2a4a;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  padding: 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02);
+  transition: border-color var(--tr);
+}
+.card:hover {
+  border-color: #3a3055;
 }
 .card h2 {
-  color: #e94560;
-  font-size: 1.1em;
-  margin-bottom: 14px;
-  border-bottom: 1px solid #2a2a4a;
-  padding-bottom: 8px;
+  font-family: 'MedievalSharp', cursive;
+  font-size: 1.15em;
+  color: var(--gold);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.bars-grid {
+
+/* ── Pin Grid ── */
+.pins-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
 }
-.bar-cell {
+.pin-cell {
   text-align: center;
-  background: #0f3460;
-  border: 2px solid #2a2a4a;
-  border-radius: 8px;
-  padding: 8px 4px;
-  transition: all 0.2s;
+  background: #0e0e24;
+  border: 2px solid var(--border);
+  border-radius: var(--rad);
+  padding: 10px 4px 8px;
+  transition: all var(--tr);
+  position: relative;
+  overflow: hidden;
 }
-.bar-cell.goal { border-color: #e94560; }
-.bar-cell.active { border-color: #f0a500; background: #1a2744; }
-.bar-label { font-size: 0.75em; color: #a0a0b0; margin-bottom: 4px; }
-.bar-value {
-  font-size: 1.6em; font-weight: bold; color: #ffffff;
+.pin-cell::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 20%; right: 20%; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  opacity: 0;
+  transition: opacity var(--tr);
 }
-.bar-value.pos-1 { color: #ff6b6b; }
-.bar-value.pos-2 { color: #ffa07a; }
-.bar-value.pos-3 { color: #ffd700; }
-.bar-value.pos-4 { color: #98fb98; }
-.bar-value.pos-5 { color: #87ceeb; }
-.bar-value.pos-6 { color: #dda0dd; }
-.bar-value.pos-7 { color: #f0a500; }
+.pin-cell:hover::after { opacity: 1; }
+.pin-cell.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(201,168,76,0.15);
+}
+.pin-label {
+  font-size: 0.7em;
+  font-weight: 700;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.pin-value {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 2px;
+  transition: all var(--tr);
+}
+.pin-arrow {
+  font-size: 0.65em;
+  color: var(--text-dim);
+  display: block;
+  margin-top: -2px;
+  margin-bottom: 6px;
+}
+.pin-target { color: var(--green); font-weight: 600; }
 
-.btn-bar {
-  display: flex; gap: 4px; margin-top: 4px; justify-content: center;
-}
-.btn-sm {
-  padding: 3px 8px; border: none; border-radius: 4px;
-  cursor: pointer; font-size: 0.7em; font-weight: bold;
-  transition: all 0.15s;
-}
-.btn-sm:hover { transform: scale(1.08); }
-.btn-sm.left { background: #4caf50; color: #fff; }
-.btn-sm.right { background: #f44336; color: #fff; }
-.btn-sm:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.pin-value.v1 { color: #e74c3c; }
+.pin-value.v2 { color: #e67e22; }
+.pin-value.v3 { color: #f1c40f; }
+.pin-value.v4 { color: #2ecc71; }
+.pin-value.v5 { color: #3498db; }
+.pin-value.v6 { color: #9b59b6; }
+.pin-value.v7 { color: #e84393; }
 
+.pin-input {
+  background: #0a0a1c;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 4px 2px;
+  border-radius: 6px;
+  width: 42px;
+  text-align: center;
+  font-size: 0.8em;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  transition: border-color var(--tr);
+}
+.pin-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(201,168,76,0.2);
+}
+
+/* ── Buttons ── */
 .btn {
-  padding: 10px 24px; border: none; border-radius: 8px;
-  cursor: pointer; font-size: 0.95em; font-weight: bold;
-  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 600;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: all var(--tr);
+  position: relative;
+  overflow: hidden;
+}
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 50%);
+  pointer-events: none;
 }
 .btn:hover { transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
-.btn-primary { background: #e94560; color: #fff; }
-.btn-secondary { background: #0f3460; color: #e0e0e0; border: 1px solid #2a2a4a; }
-.btn-warn { background: #f0a500; color: #1a1a2e; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-.btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.btn-primary {
+  background: linear-gradient(135deg, #c9a84c, #a8892e);
+  color: #1a1a0a;
+  border-color: #dab960;
+  box-shadow: 0 2px 12px rgba(201,168,76,0.2);
+  font-weight: 700;
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 4px 20px rgba(201,168,76,0.35);
+}
+.btn-secondary {
+  background: #1a1a38;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: #222250;
+  border-color: #3a3055;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: var(--border);
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  border-color: #3a3055;
+}
+.btn-warn {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: #fff;
+  border-color: #e74c3c;
+}
+.btn-sm { padding: 5px 12px; font-size: 0.78em; border-radius: 6px; }
+.btn-block { width: 100%; justify-content: center; }
+.btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 
+/* ── Rules List ── */
 .rule-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px; border-radius: 6px; margin-bottom: 4px;
-  background: #0a1628; cursor: pointer;
-  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  background: #0e0e24;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--tr);
 }
-.rule-row:hover { background: #1a2744; }
-.rule-row.selected { background: #1a2744; border: 1px solid #e94560; }
-.rule-bar-owner {
-  font-weight: bold; color: #f0a500; min-width: 80px;
-  font-size: 0.9em;
+.rule-row:hover { background: #16163a; border-color: var(--border); }
+.rule-row.selected {
+  background: #1a1a3e;
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(201,168,76,0.1);
 }
-.rule-deps {
-  display: flex; flex-wrap: wrap; gap: 6px; flex: 1;
+.rule-owner {
+  font-weight: 700;
+  color: var(--gold);
+  min-width: 70px;
+  font-size: 0.85em;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px;
 }
-.dep-badge {
-  padding: 4px 10px; border-radius: 20px;
-  font-size: 0.78em; font-weight: bold; cursor: pointer;
-  border: 2px solid transparent; transition: all 0.15s;
+.rule-deps { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+.rule-arrow { color: var(--gold-dim); font-weight: 700; margin: 0 2px; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75em;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all var(--tr);
   user-select: none;
+  letter-spacing: 0.5px;
 }
-.dep-badge.self { background: #2d6a4f; color: #fff; }
-.dep-badge.same { background: #1b4332; color: #95d5b2; }
-.dep-badge.opposite { background: #5c1a1a; color: #ff6b6b; }
-.dep-badge.none { background: #2a2a4a; color: #888; }
-.dep-badge:hover { border-color: #e94560; }
+.badge:hover { transform: scale(1.05); }
+.badge.self   { background: #1a472a; color: #2ecc71; border-color: #27ae60; }
+.badge.same   { background: #1a3a2a; color: #58d68d; }
+.badge.opposite { background: #3d1515; color: #e74c3c; border-color: #c0392b; }
+.badge.none   { background: #1a1a2e; color: #666; }
 
+/* ── Rule Editor ── */
 .rule-editor {
-  background: #0a1628; border: 1px solid #2a2a4a; border-radius: 8px;
-  padding: 14px; margin-top: 10px;
+  background: #0e0e24;
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  padding: 16px;
+  margin-top: 12px;
 }
-.rule-editor h3 { color: #f0a500; font-size: 0.95em; margin-bottom: 10px; }
-.dep-editor-row {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+.rule-editor h3 {
+  color: var(--gold);
+  font-family: 'MedievalSharp', cursive;
+  font-size: 1em;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
 }
-.dep-editor-row select {
-  background: #16213e; color: #e0e0e0; border: 1px solid #2a2a4a;
-  padding: 4px 8px; border-radius: 4px; font-size: 0.85em;
+.editor-hint {
+  font-size: 0.78em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  line-height: 1.6;
 }
 
+/* ── Solution ── */
 .solution-box {
-  background: #0a1628; border: 1px solid #2a2a4a; border-radius: 8px;
-  padding: 14px; max-height: 300px; overflow-y: auto;
-  font-family: 'Fira Code', monospace; font-size: 0.82em;
-  line-height: 1.8; word-break: break-all;
+  background: #0a0a1c;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  max-height: 280px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  line-height: 2;
+  word-break: break-all;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 .solution-move {
-  display: inline-block; padding: 2px 8px; margin: 2px;
-  background: #1a2744; border-radius: 4px; cursor: pointer;
-  transition: all 0.15s;
+  display: inline-block;
+  padding: 3px 10px;
+  margin: 2px;
+  background: #16163a;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--tr);
 }
-.solution-move:hover { background: #e94560; }
-.solution-move.highlight { background: #e94560; }
-
-.status { padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; margin-top: 10px; }
-.status.success { background: #1b4332; color: #95d5b2; }
-.status.error { background: #5c1a1a; color: #ff6b6b; }
-
-input[type="number"] {
-  background: #16213e; color: #e0e0e0; border: 1px solid #2a2a4a;
-  padding: 6px 10px; border-radius: 6px; width: 50px; text-align: center;
-  font-size: 1em;
+.solution-move:hover { background: var(--gold); color: #1a1a0a; }
+.solution-move.highlight {
+  background: var(--gold); color: #1a1a0a;
+  box-shadow: 0 0 12px rgba(201,168,76,0.4);
 }
-label { color: #a0a0b0; font-size: 0.85em; }
+
+/* ── Status ── */
+.status-msg {
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.88em;
+  margin-top: 12px;
+  animation: fadeIn 0.3s ease;
+}
+.status-msg.success {
+  background: #0f2b1a; color: #2ecc71; border: 1px solid #1a472a;
+}
+.status-msg.error {
+  background: #2b0f0f; color: #e74c3c; border: 1px solid #3d1515;
+}
+
+.playback-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 14px;
+  background: #0e0e24;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.playback-countdown {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 1.05em;
+  font-family: 'JetBrains Mono', monospace;
+  animation: pulse 1s ease-in-out infinite;
+}
+.playback-info {
+  font-size: 0.75em;
+  color: var(--text-dim);
+  margin-top: 8px;
+  line-height: 1.7;
+}
+.playback-info kbd {
+  background: #1a1a38;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9em;
+  color: var(--gold);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; } 50% { opacity: 0.5; }
+}
+
+/* ── Misc ── */
+.pin-count-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.pin-count-row label {
+  color: var(--text-dim);
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.pin-count-row input {
+  background: #0a0a1c;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  border-radius: 8px;
+  width: 52px;
+  text-align: center;
+  font-size: 0.9em;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  transition: border-color var(--tr);
+}
+.pin-count-row input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.pin-count-row .range-hint {
+  font-size: 0.7em;
+  color: #555;
+}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>🔒 Gothic 1 Remake - Lock Solver</h1>
-  <p>BFS puzzle solver — configurable bars, range 1–7, goal always all-4s</p>
-</div>
+<header class="header">
+  <h1><span style="font-size:0.7em;opacity:0.7">⚔️</span> Gothic Lock Solver <span style="font-size:0.7em;opacity:0.7">⚔️</span></h1>
+  <div class="subtitle">BFS Puzzle Solver — configurable pins, range 1–7, goal always 4</div>
+  <div class="ornament">◆ ◇ ◆</div>
+</header>
 
 <div class="container">
   <div class="grid-2">
-    <!-- Left column: State & Controls -->
+
+    <!-- ═══ LEFT COLUMN ═══ -->
     <div>
+
+      <!-- Pins State -->
       <div class="card">
-        <h2>📊 State (Goal = all 4s)</h2>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <label style="font-size:0.85em">Bars:</label>
-          <input type="number" id="numBarsInput" min="1" max="10" value="6"
-            onchange="setNumBars(parseInt(this.value)||6)"
-            style="width:50px">
-          <span style="font-size:0.75em;color:#666">(1–10)</span>
+        <h2>📌 Pin State <span style="font-size:0.7em;color:var(--text-dim);font-family:Inter;font-weight:400">→ Goal: all 4</span></h2>
+        <div class="pin-count-row">
+          <label>Pins</label>
+          <input type="number" id="numPinsInput" min="1" max="10" value="6"
+            onchange="setNumPins(parseInt(this.value)||6)">
+          <span class="range-hint">1–10</span>
         </div>
-        <div class="bars-grid" id="startGrid"></div>
-        <div style="text-align:center;margin-top:10px">
-          <button class="btn btn-secondary" onclick="resetToAll4()">↩ Reset to all 4s</button>
+        <div class="pins-grid" id="startGrid"></div>
+        <div style="text-align:center;margin-top:8px">
+          <button class="btn btn-ghost btn-sm" onclick="resetToAll4()">↩ Reset to all 4s</button>
         </div>
       </div>
 
+      <!-- Solution -->
       <div class="card">
-        <h2>⚡ Solution</h2>
-        <button class="btn btn-primary" onclick="solve()" id="solveBtn">
+        <h2>⚡ Solve</h2>
+        <button class="btn btn-primary btn-block" onclick="solve()" id="solveBtn">
           🔍 Solve Puzzle
         </button>
         <div id="solutionStatus"></div>
-        <div id="playbackControls" style="display:none;margin-top:10px">
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="startPlayback()" id="playBtn">
-              ▶ Play (WASD)
+
+        <div id="playbackControls" style="display:none">
+          <div class="playback-bar">
+            <button class="btn btn-primary btn-sm" onclick="startPlayback()" id="playBtn">
+              ▶ Play
             </button>
-            <button class="btn btn-warn" onclick="stopPlayback()" id="stopBtn" disabled>
+            <button class="btn btn-warn btn-sm" onclick="stopPlayback()" id="stopBtn" disabled>
               ⏹ Stop
             </button>
-            <span id="countdown" style="color:#f0a500;font-weight:bold;font-size:1.1em"></span>
+            <span id="countdown" class="playback-countdown"></span>
           </div>
-          <p style="font-size:0.75em;color:#a0a0b0;margin-top:6px">
-            After clicking <b>Play</b>, switch to the game window within 10 seconds.<br>
-            <b>W/S</b>=select bar &nbsp; <b>A</b>=Left &nbsp; <b>D</b>=Right
-          </p>
+          <div class="playback-info">
+            Click <b>Play</b>, then switch to the game within <b>10 seconds</b>.<br>
+            <kbd>W</kbd>/<kbd>S</kbd> select pin &nbsp; <kbd>A</kbd> move left &nbsp; <kbd>D</kbd> move right
+          </div>
         </div>
-        <div class="solution-box" id="solutionBox" style="display:none;margin-top:10px">
-          <p style="color:#a0a0b0;font-size:0.75em;margin-bottom:6px">Click move to highlight position in sequence:</p>
+
+        <div class="solution-box" id="solutionBox" style="display:none;margin-top:14px">
+          <div style="font-size:0.72em;color:var(--text-dim);margin-bottom:8px">Click any move to highlight:</div>
           <div id="solutionMoves"></div>
         </div>
       </div>
     </div>
 
-    <!-- Right column: Rules -->
+    <!-- ═══ RIGHT COLUMN ═══ -->
     <div>
       <div class="card">
-        <h2>⚙️ Rules</h2>
-        <p style="font-size:0.8em;color:#a0a0b0;margin-bottom:10px">
-          Click a bar row to edit its dependencies. Each bar needs at least its self-move (+1) to move.
-        </p>
+        <h2>⚙️ Pin Rules</h2>
+        <div style="font-size:0.8em;color:var(--text-dim);margin-bottom:12px;line-height:1.5">
+          Click a pin to edit which other pins move with it. Every pin needs at minimum its <span class="badge self" style="cursor:default">self</span> dependency.
+        </div>
         <div id="rulesList"></div>
         <div class="rule-editor" id="ruleEditor" style="display:none"></div>
         <div class="btn-group">
-          <button class="btn btn-secondary" onclick="loadHardPuzzle()">🏰 Hard Puzzle</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadHardPuzzle()">🏰 Hard Puzzle</button>
         </div>
-        <button class="btn btn-primary" onclick="updateConfig()" style="margin-top:10px;width:100%">
+        <button class="btn btn-primary btn-block" onclick="updateConfig()" style="margin-top:12px">
           💾 Apply Rules &amp; Reconfigure
         </button>
       </div>
     </div>
+
   </div>
 </div>
 
 <script>
-// Global state
 let config = null;
-let selectedRuleBar = null;
+let selectedPin = null;
 let editingRules = {};
 
 async function init() {
   const resp = await fetch('/api/config');
   config = await resp.json();
   editingRules = JSON.parse(JSON.stringify(config.rules));
-  document.getElementById('numBarsInput').value = config.num_bars;
+  document.getElementById('numPinsInput').value = config.num_bars;
   renderAll();
 }
 init();
@@ -255,18 +561,17 @@ function clearSolution() {
 function renderAll() {
   renderStartGrid();
   renderRulesList();
-  if (selectedRuleBar !== null) renderRuleEditor();
+  if (selectedPin !== null) renderRuleEditor();
 }
 
-function setNumBars(n) {
+function setNumPins(n) {
   n = Math.max(1, Math.min(10, n));
   config.num_bars = n;
-  document.getElementById('numBarsInput').value = n;
+  document.getElementById('numPinsInput').value = n;
   config.start.length = n;
   for (let i = 0; i < n; i++) {
     if (config.start[i] === undefined) config.start[i] = 4;
   }
-  // Fix editingRules: remove out-of-range entries
   const newRules = {};
   for (let b = 0; b < n; b++) {
     newRules[b] = (editingRules[b] || []).filter(d => d.bar < n);
@@ -275,10 +580,8 @@ function setNumBars(n) {
     }
   }
   editingRules = newRules;
-  selectedRuleBar = null;
-  document.getElementById('solutionBox').style.display = 'none';
-  document.getElementById('playbackControls').style.display = 'none';
-  document.getElementById('solutionStatus').innerHTML = '';
+  selectedPin = null;
+  clearSolution();
   renderAll();
 }
 
@@ -287,13 +590,14 @@ function renderStartGrid() {
   const n = config.num_bars;
   grid.style.gridTemplateColumns = `repeat(${Math.min(n, 6)}, 1fr)`;
   grid.innerHTML = config.start.map((v, i) => `
-    <div class="bar-cell active">
-      <div class="bar-label">Bar ${i + 1}</div>
-      <div class="bar-value pos-${v}">${v} → 4</div>
+    <div class="pin-cell active">
+      <div class="pin-label">Pin ${i + 1}</div>
+      <div class="pin-value v${v}">${v}</div>
+      <div class="pin-arrow">↧</div>
+      <div class="pin-target">4</div>
       <div style="margin-top:4px">
-        <input type="number" min="1" max="7" value="${v}"
-          onchange="setStart(${i}, parseInt(this.value)||4)"
-          style="width:44px;font-size:0.8em;padding:2px 4px">
+        <input class="pin-input" type="number" min="1" max="7" value="${v}"
+          onchange="setStart(${i}, parseInt(this.value)||4)">
       </div>
     </div>
   `).join('');
@@ -316,96 +620,97 @@ function renderRulesList() {
   let html = '';
   for (let b = 0; b < n; b++) {
     const deps = editingRules[b] || [];
-    const selected = selectedRuleBar === b ? ' selected' : '';
-    html += `<div class="rule-row${selected}" onclick="selectRuleBar(${b})">
-      <div class="rule-bar-owner">Bar ${b+1} →</div>
+    const activeDeps = deps.filter(d => d.dir !== 0);
+    const sel = selectedPin === b ? ' selected' : '';
+    html += `<div class="rule-row${sel}" onclick="selectPin(${b})">
+      <div class="rule-owner">Pin ${b+1}</div>
+      <div class="rule-arrow">→</div>
       <div class="rule-deps">
-        ${deps.map(d => {
-          if (d.dir === 0) return '';
-          if (d.bar === b) return `<span class="dep-badge self">self</span>`;
-          if (d.dir === 1) return `<span class="dep-badge same">${d.bar+1}: same</span>`;
-          if (d.dir === -1) return `<span class="dep-badge opposite">${d.bar+1}: opp</span>`;
+        ${activeDeps.map(d => {
+          if (d.bar === b) return '<span class="badge self">self</span>';
+          if (d.dir === 1) return `<span class="badge same">${d.bar+1} ⇧</span>`;
+          if (d.dir === -1) return `<span class="badge opposite">${d.bar+1} ⇩</span>`;
           return '';
         }).join('')}
-        ${deps.filter(d => d.dir !== 0).length === 0 ? '<span style="color:#666;font-size:0.8em">no deps</span>' : ''}
+        ${activeDeps.length === 0 ? '<span style="color:#555;font-size:0.78em;font-style:italic">no deps</span>' : ''}
       </div>
     </div>`;
   }
   list.innerHTML = html;
 }
 
-function selectRuleBar(bar) {
-  selectedRuleBar = bar;
+function selectPin(pin) {
+  selectedPin = pin;
   renderRulesList();
   renderRuleEditor();
 }
 
 function renderRuleEditor() {
   const editor = document.getElementById('ruleEditor');
-  if (selectedRuleBar === null) { editor.style.display = 'none'; return; }
+  if (selectedPin === null) { editor.style.display = 'none'; return; }
   editor.style.display = 'block';
 
-  const deps = editingRules[selectedRuleBar] || [];
-  if (!deps.find(d => d.bar === selectedRuleBar && d.dir !== 0)) {
-    deps.unshift({ bar: selectedRuleBar, dir: 1 });
-    editingRules[selectedRuleBar] = deps;
+  const deps = editingRules[selectedPin] || [];
+  if (!deps.find(d => d.bar === selectedPin && d.dir !== 0)) {
+    deps.unshift({ bar: selectedPin, dir: 1 });
+    editingRules[selectedPin] = deps;
   }
 
   const n = config.num_bars;
-  let html = `<h3>Editing: Bar ${selectedRuleBar+1} Dependencies</h3>`;
-  html += `<p style="font-size:0.8em;color:#a0a0b0;margin-bottom:8px">
-    Click badges to cycle: <span class="dep-badge self">self</span> →
-    <span class="dep-badge same">same dir</span> →
-    <span class="dep-badge opposite">opposite</span> →
-    <span class="dep-badge none">none</span>
-  </p>`;
+  let html = `<h3>Editing Pin ${selectedPin+1}</h3>`;
+  html += `<div class="editor-hint">
+    Click badges to cycle:
+    <span class="badge self" style="cursor:default">self</span>
+    <span style="margin:0 2px;color:var(--text-dim)">→</span>
+    <span class="badge same" style="cursor:default">same dir</span>
+    <span style="margin:0 2px;color:var(--text-dim)">→</span>
+    <span class="badge opposite" style="cursor:default">opposite</span>
+    <span style="margin:0 2px;color:var(--text-dim)">→</span>
+    <span class="badge none" style="cursor:default">off</span>
+  </div>`;
 
   html += '<div style="display:flex;flex-wrap:wrap;gap:8px">';
   for (let i = 0; i < n; i++) {
     const dep = deps.find(d => d.bar === i);
     let cls, label;
     if (!dep || dep.dir === 0) {
-      cls = 'none'; label = `${i+1}: —`;
-    } else if (dep.dir === 1 && i === selectedRuleBar) {
-      cls = 'self'; label = `${i+1}: self`;
+      cls = 'none'; label = `${i+1}`;
+    } else if (dep.dir === 1 && i === selectedPin) {
+      cls = 'self'; label = `${i+1}`;
     } else if (dep.dir === 1) {
-      cls = 'same'; label = `${i+1}: same`;
+      cls = 'same'; label = `${i+1} ⇧`;
     } else {
-      cls = 'opposite'; label = `${i+1}: opp`;
+      cls = 'opposite'; label = `${i+1} ⇩`;
     }
-    html += `<span class="dep-badge ${cls}" onclick="toggleDep(${selectedRuleBar}, ${i})"
-      style="font-size:0.9em;padding:8px 16px">${label}</span>`;
+    html += `<span class="badge ${cls}" onclick="toggleDep(${selectedPin}, ${i})"
+      style="font-size:0.88em;padding:8px 14px">${label}</span>`;
   }
   html += '</div>';
 
   editor.innerHTML = html;
 }
 
-function toggleDep(ownerBar, targetBar) {
-  let deps = editingRules[ownerBar] || [];
-  const existing = deps.find(d => d.bar === targetBar);
+function toggleDep(ownerPin, targetPin) {
+  let deps = editingRules[ownerPin] || [];
+  const existing = deps.find(d => d.bar === targetPin);
 
   if (!existing || existing.dir === 0) {
-    // none → self (if same bar) or same
-    deps = deps.filter(d => d.bar !== targetBar);
-    deps.push({ bar: targetBar, dir: 1 });
-    if (targetBar === ownerBar) {
-      deps.sort((a, b) => (a.bar === ownerBar ? -1 : 1));
+    deps = deps.filter(d => d.bar !== targetPin);
+    deps.push({ bar: targetPin, dir: 1 });
+    if (targetPin === ownerPin) {
+      deps.sort((a, b) => (a.bar === ownerPin ? -1 : 1));
     }
   } else if (existing.dir === 1) {
-    // same/self → opposite
-    deps = deps.map(d => d.bar === targetBar ? { bar: targetBar, dir: -1 } : d);
+    deps = deps.map(d => d.bar === targetPin ? { bar: targetPin, dir: -1 } : d);
   } else {
-    // opposite → none (remove)
-    deps = deps.filter(d => d.bar !== targetBar);
+    deps = deps.filter(d => d.bar !== targetPin);
   }
 
-  // Never lose self-dep
-  if (!deps.find(d => d.bar === ownerBar && d.dir !== 0)) {
-    deps.unshift({ bar: ownerBar, dir: 1 });
+  if (!deps.find(d => d.bar === ownerPin && d.dir !== 0)) {
+    deps.unshift({ bar: ownerPin, dir: 1 });
   }
 
-  editingRules[ownerBar] = deps;
+  editingRules[ownerPin] = deps;
   renderRulesList();
   renderRuleEditor();
 }
@@ -424,10 +729,8 @@ async function updateConfig() {
   });
   config = await resp.json();
   editingRules = JSON.parse(JSON.stringify(config.rules));
-  selectedRuleBar = null;
-  document.getElementById('solutionBox').style.display = 'none';
-  document.getElementById('playbackControls').style.display = 'none';
-  document.getElementById('solutionStatus').innerHTML = '';
+  selectedPin = null;
+  clearSolution();
   renderAll();
 }
 
@@ -457,7 +760,7 @@ async function solve() {
   const playback = document.getElementById('playbackControls');
 
   if (data.success) {
-    status.innerHTML = `<div class="status success">✅ ${data.message}</div>`;
+    status.innerHTML = `<div class="status-msg success">✅ ${data.message}</div>`;
     box.style.display = 'block';
     playback.style.display = 'block';
     moves.innerHTML = data.solution.map((m, i) =>
@@ -467,7 +770,7 @@ async function solve() {
     document.getElementById('stopBtn').disabled = true;
     document.getElementById('countdown').textContent = '';
   } else {
-    status.innerHTML = `<div class="status error">❌ ${data.message}</div>`;
+    status.innerHTML = `<div class="status-msg error">❌ ${data.message}</div>`;
     box.style.display = 'none';
     playback.style.display = 'none';
   }
@@ -486,9 +789,8 @@ async function startPlayback() {
   playBtn.disabled = true;
   stopBtn.disabled = false;
 
-  // 10 second countdown
   let sec = 10;
-  countdown.innerHTML = `⏳ Switch to game! ${sec}s`;
+  countdown.textContent = `⚔️ Switch to game! ${sec}s`;
   countdownTimer = setInterval(() => {
     sec--;
     if (sec <= 0) {
@@ -496,14 +798,13 @@ async function startPlayback() {
       countdown.textContent = '▶ Playing...';
       firePlayback();
     } else {
-      countdown.textContent = `⏳ Switch to game! ${sec}s`;
+      countdown.textContent = `⚔️ Switch to game! ${sec}s`;
     }
   }, 1000);
 }
 
 async function firePlayback() {
   await fetch('/api/playback/play', { method: 'POST' });
-  // Poll for playback status
   const poll = setInterval(async () => {
     const resp = await fetch('/api/playback/status');
     const data = await resp.json();
@@ -522,10 +823,7 @@ async function firePlayback() {
 }
 
 async function stopPlayback() {
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
-  }
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   await fetch('/api/playback/stop', { method: 'POST' });
   document.getElementById('playBtn').disabled = false;
   document.getElementById('stopBtn').disabled = true;
@@ -548,14 +846,12 @@ function loadHardPuzzle() {
     4: [{bar:4,dir:1},{bar:0,dir:-1},{bar:1,dir:1},{bar:2,dir:-1},{bar:5,dir:-1}],
     5: [{bar:5,dir:1},{bar:0,dir:-1},{bar:1,dir:1}]
   };
-  document.getElementById('numBarsInput').value = 6;
-  selectedRuleBar = null;
-  document.getElementById('solutionBox').style.display = 'none';
-  document.getElementById('playbackControls').style.display = 'none';
-  document.getElementById('solutionStatus').innerHTML = '';
+  document.getElementById('numPinsInput').value = 6;
+  selectedPin = null;
+  clearSolution();
   renderAll();
 }
-
 </script>
+
 </body>
 </html>
