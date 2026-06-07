@@ -156,17 +156,9 @@ body {
   font-size: 2em;
   font-weight: 700;
   line-height: 1;
-  margin-bottom: 2px;
+  margin-bottom: 6px;
   transition: all var(--tr);
 }
-.pin-arrow {
-  font-size: 0.65em;
-  color: var(--text-dim);
-  display: block;
-  margin-top: -2px;
-  margin-bottom: 6px;
-}
-.pin-target { color: var(--green); font-weight: 600; }
 
 .pin-value.v1 { color: #e74c3c; }
 .pin-value.v2 { color: #e67e22; }
@@ -524,7 +516,7 @@ body {
 
       <!-- Pins State -->
       <div class="card">
-        <h2>📌 Pin State <span style="font-size:0.7em;color:var(--text-dim);font-family:Inter;font-weight:400">→ Goal: all 4</span></h2>
+        <h2>📌 Pin State</h2>
         <div class="pin-count-row">
           <label>Pins</label>
           <input type="number" id="numPinsInput" min="1" max="10" value="6"
@@ -673,8 +665,6 @@ function renderStartGrid() {
     <div class="pin-cell active">
       <div class="pin-label">Pin ${i + 1}</div>
       <div class="pin-value v${v}">${v}</div>
-      <div class="pin-arrow">↧</div>
-      <div class="pin-target">4</div>
       <div style="margin-top:4px">
         <input class="pin-input" type="number" min="1" max="7" value="${v}"
           onchange="setStart(${i}, parseInt(this.value)||4)">
