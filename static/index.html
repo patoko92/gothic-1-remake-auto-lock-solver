@@ -546,9 +546,15 @@ body {
               ⏹ Stop
             </button>
             <span id="countdown" class="playback-countdown"></span>
+            <label style="color:var(--text-dim);font-size:0.78em;margin-left:8px">Delay:</label>
+            <input type="number" id="playbackDelay" value="10" min="1" max="60"
+              style="background:#0a0a1c;color:var(--text);border:1px solid var(--border);
+              padding:4px 6px;border-radius:6px;width:50px;text-align:center;
+              font-family:'JetBrains Mono',monospace;font-size:0.8em;font-weight:600">
+            <span style="font-size:0.72em;color:var(--text-dim)">sec</span>
           </div>
           <div class="playback-info">
-            Click <b>Play</b>, then switch to the game within <b>10 seconds</b>.<br>
+            Click <b>Play</b>, then switch to the game within the countdown.<br>
             <kbd>W</kbd>/<kbd>S</kbd> select layer &nbsp; <kbd>A</kbd> move pin left &nbsp; <kbd>D</kbd> move pin right
           </div>
         </div>
@@ -874,7 +880,8 @@ async function startPlayback() {
   playBtn.disabled = true;
   stopBtn.disabled = false;
 
-  let sec = 10;
+  const delayInput = document.getElementById('playbackDelay');
+  let sec = Math.max(1, Math.min(60, parseInt(delayInput.value) || 10));
   countdown.textContent = `⚔️ Switch to game! ${sec}s`;
   countdownTimer = setInterval(() => {
     sec--;
