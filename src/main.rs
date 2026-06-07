@@ -1,4 +1,5 @@
 mod solver;
+mod playback;
 
 use axum::{
     extract::State,
@@ -9,12 +10,16 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use solver::{Direction, Move, PuzzleConfig, Rules};
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 
 #[derive(Clone)]
 struct AppState {
     config: Arc<Mutex<PuzzleConfig>>,
     solution: Arc<Mutex<Option<Vec<Move>>>>,
+    playing: Arc<AtomicBool>,
 }
 
 #[derive(Serialize)]
@@ -155,6 +160,43 @@ async fn apply_single_move(
     }
 }
 
+#[derive(Serialize)]
+struct PlaybackStatusResponse {
+    playing: bool,
+}
+
+async fn playback_status(State(state): State<AppState>) -> Json<PlaybackStatusResponse> {
+    Json(PlaybackStatusResponse {
+        playing: state.playing.load(Ordering::SeqCst),
+    })
+}
+
+async fn play_solution(State(state): State<AppState>) -> Json<serde_json::Value> {
+    if state.playing.swap(true, Ordering::SeqCst) {
+        return Json(serde_json::json!({"status": "already_playing"}));
+    }
+
+    let solution = state.solution.lock().unwrap().clone();
+    let playing = state.playing.clone();
+
+    if let Some(moves) = solution {
+        let steps = moves.len();
+        tokio::task::spawn_blocking(move || {
+            playback::play_moves(&moves, &playing);
+            playing.store(false, Ordering::SeqCst);
+        });
+        Json(serde_json::json!({"status": "playing", "steps": steps}))
+    } else {
+        state.playing.store(false, Ordering::SeqCst);
+        Json(serde_json::json!({"status": "no_solution"}))
+    }
+}
+
+async fn stop_playback(State(state): State<AppState>) -> Json<serde_json::Value> {
+    state.playing.store(false, Ordering::SeqCst);
+    Json(serde_json::json!({"status": "stopped"}))
+}
+
 #[tokio::main]
 async fn main() {
     let config = solver::default_hard_config();
@@ -162,6 +204,7 @@ async fn main() {
     let state = AppState {
         config: Arc::new(Mutex::new(config)),
         solution: Arc::new(Mutex::new(None)),
+        playing: Arc::new(AtomicBool::new(false)),
     };
 
     let app = Router::new()
@@ -169,6 +212,9 @@ async fn main() {
         .route("/api/config", get(get_config).post(update_config))
         .route("/api/solve", post(solve_puzzle))
         .route("/api/apply", post(apply_single_move))
+        .route("/api/playback/play", post(play_solution))
+        .route("/api/playback/stop", post(stop_playback))
+        .route("/api/playback/status", get(playback_status))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")

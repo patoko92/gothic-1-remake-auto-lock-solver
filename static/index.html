@@ -189,6 +189,21 @@ label { color: #a0a0b0; font-size: 0.85em; }
           🔍 Solve Puzzle
         </button>
         <div id="solutionStatus"></div>
+        <div id="playbackControls" style="display:none;margin-top:10px">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="startPlayback()" id="playBtn">
+              ▶ Play (WASD)
+            </button>
+            <button class="btn btn-warn" onclick="stopPlayback()" id="stopBtn" disabled>
+              ⏹ Stop
+            </button>
+            <span id="countdown" style="color:#f0a500;font-weight:bold;font-size:1.1em"></span>
+          </div>
+          <p style="font-size:0.75em;color:#a0a0b0;margin-top:6px">
+            After clicking <b>Play</b>, switch to the game window within 10 seconds.<br>
+            <b>W/S</b>=select bar &nbsp; <b>A</b>=Left &nbsp; <b>D</b>=Right
+          </p>
+        </div>
         <div class="solution-box" id="solutionBox" style="display:none;margin-top:10px">
           <p style="color:#a0a0b0;font-size:0.75em;margin-bottom:6px">Click move to highlight position in sequence:</p>
           <div id="solutionMoves"></div>
@@ -231,6 +246,12 @@ async function init() {
 }
 init();
 
+function clearSolution() {
+  document.getElementById('solutionBox').style.display = 'none';
+  document.getElementById('playbackControls').style.display = 'none';
+  document.getElementById('solutionStatus').innerHTML = '';
+}
+
 function renderAll() {
   renderStartGrid();
   renderRulesList();
@@ -256,6 +277,7 @@ function setNumBars(n) {
   editingRules = newRules;
   selectedRuleBar = null;
   document.getElementById('solutionBox').style.display = 'none';
+  document.getElementById('playbackControls').style.display = 'none';
   document.getElementById('solutionStatus').innerHTML = '';
   renderAll();
 }
@@ -404,6 +426,7 @@ async function updateConfig() {
   editingRules = JSON.parse(JSON.stringify(config.rules));
   selectedRuleBar = null;
   document.getElementById('solutionBox').style.display = 'none';
+  document.getElementById('playbackControls').style.display = 'none';
   document.getElementById('solutionStatus').innerHTML = '';
   renderAll();
 }
@@ -431,20 +454,82 @@ async function solve() {
   const status = document.getElementById('solutionStatus');
   const box = document.getElementById('solutionBox');
   const moves = document.getElementById('solutionMoves');
+  const playback = document.getElementById('playbackControls');
 
   if (data.success) {
     status.innerHTML = `<div class="status success">✅ ${data.message}</div>`;
     box.style.display = 'block';
+    playback.style.display = 'block';
     moves.innerHTML = data.solution.map((m, i) =>
       `<span class="solution-move" onclick="highlightMove(${i})" id="move-${i}">${m}</span>`
     ).join(' ');
+    document.getElementById('playBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+    document.getElementById('countdown').textContent = '';
   } else {
     status.innerHTML = `<div class="status error">❌ ${data.message}</div>`;
     box.style.display = 'none';
+    playback.style.display = 'none';
   }
 
   btn.disabled = false;
   btn.textContent = '🔍 Solve Puzzle';
+}
+
+let countdownTimer = null;
+
+async function startPlayback() {
+  const playBtn = document.getElementById('playBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const countdown = document.getElementById('countdown');
+
+  playBtn.disabled = true;
+  stopBtn.disabled = false;
+
+  // 10 second countdown
+  let sec = 10;
+  countdown.innerHTML = `⏳ Switch to game! ${sec}s`;
+  countdownTimer = setInterval(() => {
+    sec--;
+    if (sec <= 0) {
+      clearInterval(countdownTimer);
+      countdown.textContent = '▶ Playing...';
+      firePlayback();
+    } else {
+      countdown.textContent = `⏳ Switch to game! ${sec}s`;
+    }
+  }, 1000);
+}
+
+async function firePlayback() {
+  await fetch('/api/playback/play', { method: 'POST' });
+  // Poll for playback status
+  const poll = setInterval(async () => {
+    const resp = await fetch('/api/playback/status');
+    const data = await resp.json();
+    if (!data.playing) {
+      clearInterval(poll);
+      document.getElementById('playBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+      document.getElementById('countdown').textContent = '✅ Done!';
+      setTimeout(() => {
+        if (document.getElementById('countdown').textContent === '✅ Done!') {
+          document.getElementById('countdown').textContent = '';
+        }
+      }, 3000);
+    }
+  }, 500);
+}
+
+async function stopPlayback() {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  await fetch('/api/playback/stop', { method: 'POST' });
+  document.getElementById('playBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('countdown').textContent = '';
 }
 
 function highlightMove(idx) {
@@ -466,6 +551,7 @@ function loadHardPuzzle() {
   document.getElementById('numBarsInput').value = 6;
   selectedRuleBar = null;
   document.getElementById('solutionBox').style.display = 'none';
+  document.getElementById('playbackControls').style.display = 'none';
   document.getElementById('solutionStatus').innerHTML = '';
   renderAll();
 }
