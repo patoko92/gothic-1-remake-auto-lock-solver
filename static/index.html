@@ -498,7 +498,7 @@ body {
 
 <header class="header">
   <h1><span style="font-size:0.7em;opacity:0.7">⚔️</span> Gothic Lock Solver <span style="font-size:0.7em;opacity:0.7">⚔️</span></h1>
-  <div class="subtitle">BFS Puzzle Solver — configurable pins, range 1–7, goal always 4</div>
+  <div class="subtitle">BFS Puzzle Solver — configurable layers, range 1–7, goal always 4</div>
   <div class="net-toggle">
     <span>� Local</span>
     <div class="switch lan" id="netSwitch" onclick="toggleNetwork()"></div>
@@ -514,11 +514,11 @@ body {
     <!-- ═══ LEFT COLUMN ═══ -->
     <div>
 
-      <!-- Pins State -->
+      <!-- Layer State -->
       <div class="card">
-        <h2>📌 Pin State</h2>
+        <h2>📌 Layer State</h2>
         <div class="pin-count-row">
-          <label>Pins</label>
+          <label>Layers</label>
           <input type="number" id="numPinsInput" min="1" max="10" value="6"
             onchange="setNumPins(parseInt(this.value)||6)">
           <span class="range-hint">1–10</span>
@@ -549,7 +549,7 @@ body {
           </div>
           <div class="playback-info">
             Click <b>Play</b>, then switch to the game within <b>10 seconds</b>.<br>
-            <kbd>W</kbd>/<kbd>S</kbd> select pin &nbsp; <kbd>A</kbd> move left &nbsp; <kbd>D</kbd> move right
+            <kbd>W</kbd>/<kbd>S</kbd> select layer &nbsp; <kbd>A</kbd> move pin left &nbsp; <kbd>D</kbd> move pin right
           </div>
         </div>
 
@@ -563,9 +563,9 @@ body {
     <!-- ═══ RIGHT COLUMN ═══ -->
     <div>
       <div class="card">
-        <h2>⚙️ Pin Rules</h2>
+        <h2>⚙️ Layer Rules</h2>
         <div style="font-size:0.8em;color:var(--text-dim);margin-bottom:12px;line-height:1.5">
-          Click a pin to edit which other pins move with it. Every pin needs at minimum its <span class="badge self" style="cursor:default">self</span> dependency.
+          Click a layer to edit which other pins move with it. Every layer needs at minimum its <span class="badge self" style="cursor:default">self</span> dependency.
         </div>
         <div id="rulesList"></div>
         <div class="rule-editor" id="ruleEditor" style="display:none"></div>
@@ -594,6 +594,7 @@ async function init() {
   editingRules = JSON.parse(JSON.stringify(config.rules));
   document.getElementById('numPinsInput').value = config.num_bars;
   fetchLanIp();
+  fetchLanMode();
   renderAll();
 }
 init();
@@ -607,8 +608,22 @@ async function fetchLanIp() {
   } catch(e) { lanIp = 'unknown'; }
 }
 
+async function fetchLanMode() {
+  try {
+    const resp = await fetch('/api/lan-mode');
+    const data = await resp.json();
+    lanMode = data.lan_mode;
+    updateNetworkUI();
+  } catch(e) {}
+}
+
 function toggleNetwork() {
   lanMode = !lanMode;
+  fetch('/api/lan-mode', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({lan_mode: lanMode})
+  }).catch(e => console.error('Toggle failed:', e));
   updateNetworkUI();
 }
 
@@ -663,7 +678,7 @@ function renderStartGrid() {
   grid.style.gridTemplateColumns = `repeat(${Math.min(n, 6)}, 1fr)`;
   grid.innerHTML = config.start.map((v, i) => `
     <div class="pin-cell active">
-      <div class="pin-label">Pin ${i + 1}</div>
+      <div class="pin-label">Layer ${i + 1}</div>
       <div class="pin-value v${v}">${v}</div>
       <div style="margin-top:4px">
         <input class="pin-input" type="number" min="1" max="7" value="${v}"
@@ -693,7 +708,7 @@ function renderRulesList() {
     const activeDeps = deps.filter(d => d.dir !== 0);
     const sel = selectedPin === b ? ' selected' : '';
     html += `<div class="rule-row${sel}" onclick="selectPin(${b})">
-      <div class="rule-owner">Pin ${b+1}</div>
+      <div class="rule-owner">Layer ${b+1}</div>
       <div class="rule-arrow">→</div>
       <div class="rule-deps">
         ${activeDeps.map(d => {
@@ -727,7 +742,7 @@ function renderRuleEditor() {
   }
 
   const n = config.num_bars;
-  let html = `<h3>Editing Pin ${selectedPin+1}</h3>`;
+  let html = `<h3>Editing Layer ${selectedPin+1}</h3>`;
   html += `<div class="editor-hint">
     Click badges to cycle:
     <span class="badge self" style="cursor:default">self</span>

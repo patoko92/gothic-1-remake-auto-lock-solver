@@ -5,15 +5,15 @@ pub const MIN_POS: i32 = 1;
 pub const MAX_POS: i32 = 7;
 pub const GOAL_VALUE: i32 = 4;
 
-/// A dependency: when the "owner" bar is moved, this `bar` moves by `dir` (+1=equal, -1=opposite, 0=none)
+/// A dependency: when the "owner" layer is moved, this layer's pin moves by `dir` (+1=equal, -1=opposite, 0=none)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Dependency {
     pub bar: usize,
     pub dir: i32, // +1, -1, or 0
 }
 
-/// Full set of rules: for each bar, list of dependencies.
-/// The self-move (bar, +1) should always be included for the bar to move itself.
+/// Full set of rules: for each layer, list of dependencies.
+/// The self-move (itself, +1) should always be included for the layer to move itself.
 pub type Rules = HashMap<usize, Vec<Dependency>>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,7 +41,7 @@ impl Direction {
     }
 }
 
-/// A single move: bar index (0-based) and direction
+/// A single move: layer index (0-based) and direction
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Move {
     pub bar: usize,
@@ -105,7 +105,7 @@ pub fn solve(config: &PuzzleConfig) -> Option<Vec<Move>> {
     None
 }
 
-/// Return the default "hard puzzle" config from old.py (6 bars)
+/// Return the default "hard puzzle" config from old.py (6 layers)
 pub fn default_hard_config() -> PuzzleConfig {
     PuzzleConfig {
         num_bars: 6,

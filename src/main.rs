@@ -2,17 +2,21 @@ mod solver;
 mod playback;
 
 use axum::{
-    extract::State,
-    http::StatusCode,
-    response::{Html, Json},
+    extract::{ConnectInfo, State},
+    http::{Request, StatusCode},
+    middleware::{self, Next},
+    response::{Html, IntoResponse, Json},
     routing::{get, post},
     Router,
 };
 use serde::{Deserialize, Serialize};
 use solver::{Direction, Move, PuzzleConfig, Rules};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Mutex,
+use std::{
+    net::SocketAddr,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 
 #[derive(Clone)]
@@ -20,6 +24,7 @@ struct AppState {
     config: Arc<Mutex<PuzzleConfig>>,
     solution: Arc<Mutex<Option<Vec<Move>>>>,
     playing: Arc<AtomicBool>,
+    lan_mode: Arc<AtomicBool>,
 }
 
 #[derive(Serialize)]
@@ -99,7 +104,7 @@ async fn solve_puzzle(State(state): State<AppState>) -> Json<SolveResponse> {
             success: true,
             solution: Some(format_solution(moves)),
             steps: moves.len(),
-            message: format!("Solved in {} steps! ({} bars, goal all-4s)", moves.len(), config.num_bars),
+            message: format!("Solved in {} steps! ({} layers, goal all-4s)", moves.len(), config.num_bars),
         },
         None => SolveResponse {
             success: false,
@@ -209,6 +214,37 @@ async fn lan_ip() -> Json<serde_json::Value> {
     Json(serde_json::json!({"ip": ip}))
 }
 
+/// Middleware: when lan_mode is false, block non-localhost requests.
+async fn enforce_local_only(
+    State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    req: Request<axum::body::Body>,
+    next: Next,
+) -> impl IntoResponse {
+    let is_lan = state.lan_mode.load(Ordering::SeqCst);
+    if !is_lan && !addr.ip().is_loopback() {
+        return (StatusCode::FORBIDDEN, "Access restricted to localhost").into_response();
+    }
+    next.run(req).await
+}
+
+async fn get_lan_mode(State(state): State<AppState>) -> Json<serde_json::Value> {
+    Json(serde_json::json!({"lan_mode": state.lan_mode.load(Ordering::SeqCst)}))
+}
+
+#[derive(Deserialize)]
+struct SetLanModeRequest {
+    lan_mode: bool,
+}
+
+async fn set_lan_mode(
+    State(state): State<AppState>,
+    Json(req): Json<SetLanModeRequest>,
+) -> Json<serde_json::Value> {
+    state.lan_mode.store(req.lan_mode, Ordering::SeqCst);
+    Json(serde_json::json!({"lan_mode": req.lan_mode}))
+}
+
 #[tokio::main]
 async fn main() {
     let config = solver::default_hard_config();
@@ -217,6 +253,7 @@ async fn main() {
         config: Arc::new(Mutex::new(config)),
         solution: Arc::new(Mutex::new(None)),
         playing: Arc::new(AtomicBool::new(false)),
+        lan_mode: Arc::new(AtomicBool::new(true)),
     };
 
     let app = Router::new()
@@ -228,11 +265,18 @@ async fn main() {
         .route("/api/playback/stop", post(stop_playback))
         .route("/api/playback/status", get(playback_status))
         .route("/api/lan-ip", get(lan_ip))
+        .route("/api/lan-mode", get(get_lan_mode).post(set_lan_mode))
+        .layer(middleware::from_fn_with_state(state.clone(), enforce_local_only))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
     println!("LockSolver running at http://localhost:3000");
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
