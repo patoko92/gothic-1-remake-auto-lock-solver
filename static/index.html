@@ -581,6 +581,9 @@ body {
         <button class="btn btn-primary btn-block" onclick="updateConfig()" style="margin-top:12px">
           💾 Apply Rules &amp; Reconfigure
         </button>
+        <button class="btn btn-warn btn-block" onclick="clearAllRules()" style="margin-top:8px">
+          🗑 Clear All Rules
+        </button>
       </div>
     </div>
 
@@ -925,6 +928,17 @@ async function stopPlayback() {
 function highlightMove(idx) {
   document.querySelectorAll('.solution-move').forEach(el => el.classList.remove('highlight'));
   document.getElementById('move-' + idx)?.classList.add('highlight');
+}
+
+function clearAllRules() {
+  const n = config.num_bars;
+  editingRules = {};
+  for (let b = 0; b < n; b++) {
+    editingRules[b] = [{ bar: b, dir: 1 }];
+  }
+  selectedPin = null;
+  clearSolution();
+  renderAll();
 }
 
 function loadHardPuzzle() {
