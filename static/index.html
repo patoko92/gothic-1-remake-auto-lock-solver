@@ -187,6 +187,48 @@ body {
   box-shadow: 0 0 8px rgba(201,168,76,0.2);
 }
 
+/* ── Pin Select Buttons ── */
+.pin-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 6px;
+}
+.pin-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: #0a0a1c;
+  color: var(--text-dim);
+  font-size: 0.7em;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all var(--tr);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+.pin-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: #1a1a2e;
+  transform: scale(1.1);
+}
+.pin-btn:active {
+  transform: scale(0.95);
+}
+.pin-btn.selected {
+  background: var(--gold);
+  color: #1a1a0a;
+  border-color: #dab960;
+  box-shadow: 0 0 10px rgba(201,168,76,0.35);
+}
+
 /* ── Buttons ── */
 .btn {
   display: inline-flex;
@@ -689,9 +731,11 @@ function renderStartGrid() {
     <div class="pin-cell active">
       <div class="pin-label">Layer ${i + 1}</div>
       <div class="pin-value v${v}">${v}</div>
-      <div style="margin-top:4px">
-        <input class="pin-input" type="number" min="1" max="7" value="${v}"
-          onchange="setStart(${i}, parseInt(this.value)||4)">
+      <div class="pin-buttons">
+        ${[1,2,3,4,5,6,7].map(pv => {
+          const sel = v === pv ? ' selected' : '';
+          return `<button class="pin-btn${sel}" onclick="setStart(${i}, ${pv})">${pv}</button>`;
+        }).join('')}
       </div>
     </div>
   `).join('');

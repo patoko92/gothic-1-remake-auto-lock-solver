@@ -85,6 +85,12 @@ async fn update_config(
         config.start = start;
     }
     if let Some(rules) = req.rules {
+        // Validate all dependency bars are within bounds
+        for (_, deps) in &rules {
+            if deps.iter().any(|d| d.bar >= config.num_bars) {
+                return Err(StatusCode::BAD_REQUEST);
+            }
+        }
         config.rules = rules;
     }
 

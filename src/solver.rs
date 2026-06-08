@@ -53,10 +53,14 @@ pub fn apply_move(state: &[i32], rules: &Rules, mv: Move) -> Option<Vec<i32>> {
     let delta = mv.direction.delta();
 
     let deps = rules.get(&mv.bar)?;
+    let n = state.len();
     let mut new_state = state.to_vec();
 
     // First pass: validate all positions stay in bounds
     for dep in deps {
+        if dep.bar >= n {
+            return None;
+        }
         let new_val = new_state[dep.bar] + delta * dep.dir;
         if new_val < MIN_POS || new_val > MAX_POS {
             return None;
